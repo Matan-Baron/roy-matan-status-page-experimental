@@ -75,9 +75,6 @@ jobs:
           echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
 
 
-
-
-
       - name: Build image
         run: docker build -t roymatan-status-page app/
     
