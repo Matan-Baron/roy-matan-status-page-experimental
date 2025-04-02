@@ -24,24 +24,59 @@ jobs:
         run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 992382545251.dkr.ecr.us-east-1.amazonaws.com
 
       
-        # versioning
+      #   # versioning
+      # - name: Get latest image tag from ECR
+      #   id: get-latest-tag
+      #   run: |
+      #     REPO_NAME="roymatan-status-page"
+      #     AWS_REGION=${{ secrets.AWS_REGION }}
+      #     LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME \
+      #       --region $AWS_REGION --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' \
+      #       --output text)
+          
+      #     if [[ "$LATEST_TAG" == "None" ]]; then
+      #       NEW_TAG="0.0.1"
+      #     else
+      #       NEW_TAG=$(echo $LATEST_TAG | awk -F. '{$NF++; print $0}' OFS=.)
+      #     fi
+          
+      #     echo "New Image Tag: $NEW_TAG"
+      #     echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
+
+          
+
+
       - name: Get latest image tag from ECR
         id: get-latest-tag
         run: |
           REPO_NAME="roymatan-status-page"
           AWS_REGION=${{ secrets.AWS_REGION }}
+
+          # Get the latest tag from AWS ECR
           LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME \
             --region $AWS_REGION --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' \
             --output text)
-          
-          if [[ "$LATEST_TAG" == "None" ]]; then
+
+          # If no previous tag exists, start from 0.0.1
+          if [[ "$LATEST_TAG" == "None" || "$LATEST_TAG" == "" ]]; then
             NEW_TAG="0.0.1"
           else
-            NEW_TAG=$(echo $LATEST_TAG | awk -F. '{$NF++; print $0}' OFS=.)
+            # Split the version into major, minor, patch
+            IFS='.' read -r major minor patch <<< "$LATEST_TAG"
+            
+            # Increment only the patch version
+            patch=$((patch + 1))
+            
+            # Construct the new tag
+            NEW_TAG="$major.$minor.$patch"
           fi
           
           echo "New Image Tag: $NEW_TAG"
           echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
+
+
+
+
 
       - name: Build image
         run: docker build -t roymatan-status-page app/
