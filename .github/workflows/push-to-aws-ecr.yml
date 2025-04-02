@@ -23,28 +23,45 @@ jobs:
       - name: Log in to AWS ECR
         run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 992382545251.dkr.ecr.us-east-1.amazonaws.com
 
+      
+        # versioning
+      - name: Get latest image tag from ECR
+        id: get-latest-tag
+        run: |
+          REPO_NAME="roymatan-status-page"
+          AWS_REGION=${{ secrets.AWS_REGION }}
+          LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME \
+            --region $AWS_REGION --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' \
+            --output text)
+          
+          if [[ "$LATEST_TAG" == "None" ]]; then
+            NEW_TAG="0.0.1"
+          else
+            NEW_TAG=$(echo $LATEST_TAG | awk -F. '{$NF++; print $0}' OFS=.)
+          fi
+          
+          echo "New Image Tag: $NEW_TAG"
+          echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
 
-      - name: Build image
-        run: docker build -t roymatan-status-page app/
+    
+      - name: Tag image with new version
+        run: |
+          docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
+          docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
+
+      - name: Push image to AWS ECR
+        run: |
+          docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
+          docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
+  
+
+      # - name: Build image
+      #   run: docker build -t roymatan-status-page app/
         
         
-      - name: Add tag
-        run: docker tag roymatan-status-page:latest 992382545251.dkr.ecr.us-east-1.amazonaws.com/roymatan-status-page:latest
+      # - name: Add tag
+      #   run: docker tag roymatan-status-page:latest 992382545251.dkr.ecr.us-east-1.amazonaws.com/roymatan-status-page:latest
         
 
-      - name: Push image
-        run: docker push 992382545251.dkr.ecr.us-east-1.amazonaws.com/roymatan-status-page:latest
-
-      # - name: Log in to AWS ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v2
-
-      # - name: Build, Tag, and Push Docker Image
-      #   env:
-      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-      #     ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-      #     IMAGE_TAG: latest
-      #   run: |
-      #     docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f ./app/Dockerfile .
-      #     docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
+      # - name: Push image
+      #   run: docker push 992382545251.dkr.ecr.us-east-1.amazonaws.com/roymatan-status-page:latest
