@@ -13,5 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Echo Hello
-        run: echo "Hello"
+        run: |
+          echo "Hello"
+          echo "Hello from GitHub Actions" | tee -a /tmp/github_action_log.txt
 
