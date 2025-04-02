@@ -43,17 +43,19 @@ jobs:
           echo "New Image Tag: $NEW_TAG"
           echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
 
+      - name: Build image
+        run: docker build -t roymatan-status-page app/
     
       - name: Tag image with new version
-        run: |
-          docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
-          docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
+          run: |
+            docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
+            docker tag roymatan-status-page:latest 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
 
       - name: Push image to AWS ECR
-        run: |
-          docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
-          docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
-  
+          run: |
+            docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
+            docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
+    
 
       # - name: Build image
       #   run: docker build -t roymatan-status-page app/
