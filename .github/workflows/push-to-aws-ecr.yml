@@ -28,33 +28,6 @@ jobs:
         run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       # - name: Get latest image tag from ECR
-      #   id: get-latest-tag
-      #   run: |
-      #     REPO_NAME="roymatan-status-page"
-      #     AWS_REGION=${{ secrets.AWS_REGION }}
-
-      #     # Get the latest tag from AWS ECR
-      #     LATEST_TAG=$(aws ecr describe-images --repository-name $REPO_NAME \
-      #       --region $AWS_REGION --query 'sort_by(imageDetails,&imagePushedAt)[-1].imageTags[0]' \
-      #       --output text)
-
-      #     # If no previous tag exists, start from 0.0.1
-      #     if [[ "$LATEST_TAG" == "None" || "$LATEST_TAG" == "" ]]; then
-      #       NEW_TAG="0.0.1"
-      #     else
-      #       # Split the version into major, minor, patch
-      #       IFS='.' read -r major minor patch <<< "$LATEST_TAG"
-            
-      #       # Increment only the patch version
-      #       patch=$((patch + 1))
-            
-      #       # Construct the new tag
-      #       NEW_TAG="$major.$minor.$patch"
-      #     fi
-          
-      #     echo "New Image Tag: $NEW_TAG"
-      #     echo "IMAGE_TAG=$NEW_TAG" >> $GITHUB_ENV
-
 
       - name: Build image
         run: docker build -t roymatan-status-page app/
@@ -69,6 +42,19 @@ jobs:
           docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:$IMAGE_TAG
           docker push 992382545251.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/roymatan-status-page:latest
     
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
+
+      - name: Initialize Terraform
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Apply Terraform Configuration
+        run: terraform apply -auto-approve -var="image_tag=$IMAGE_TAG"
+        working-directory: ./terraform
 
       # - name: Build image
       #   run: docker build -t roymatan-status-page app/
